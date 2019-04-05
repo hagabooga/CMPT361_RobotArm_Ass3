@@ -1,0 +1,87 @@
+<!DOCTYPE html><html><script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 a_position;
+attribute vec3 a_normal;
+uniform vec3 u_lightWorldPosition;
+uniform vec3 u_viewWorldPosition;
+uniform mat4 u_world;
+uniform mat4 u_worldViewProjection;
+uniform mat4 u_worldInverseTranspose;
+
+// For Fragment
+varying vec3 v_normal;
+varying vec3 v_surfaceToLight;
+varying vec3 v_surfaceToView;
+
+
+void
+main()
+{
+    gl_Position = u_worldViewProjection * a_position;
+    v_normal = mat3(u_worldInverseTranspose) * a_normal;
+    vec3 surfaceWorldPosition = (u_world * a_position).xyz;
+    v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition;
+    v_surfaceToView = u_viewWorldPosition - surfaceWorldPosition;
+}
+</script>
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+
+varying vec3 v_normal;
+varying vec3 v_surfaceToLight;
+varying vec3 v_surfaceToView;
+uniform vec4 u_color;
+uniform float u_shininess;
+uniform vec3 u_lightDirection;
+uniform float u_innerLimit;          // in dot space
+uniform float u_outerLimit;          // in dot space
+uniform int isSpot;
+
+void
+main()
+{
+
+    // calculate light
+    vec3 normal = normalize(v_normal);
+    vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
+    gl_FragColor = u_color;
+    vec3 surfaceToViewDirection = normalize(v_surfaceToView);
+    vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
+    float dotFromDirection = dot(surfaceToLightDirection,-u_lightDirection);
+    float inLight = smoothstep(u_outerLimit, u_innerLimit, dotFromDirection);
+    float light = inLight * dot(normal, surfaceToLightDirection);
+    float specular = inLight * pow(dot(normal, halfVector), u_shininess);
+    gl_FragColor.rgb *= light;
+    gl_FragColor.rgb += specular;
+}
+</script>
+
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="initShaders.js"></script>
+<script type="text/javascript" src="MV.js"></script>
+<script type="text/javascript" src="input.js"></script>
+<script type="text/javascript" src="bunny.js"></script>
+<script type="text/javascript" src="utility.js"></script>
+<script type="text/javascript" src="object.js"></script>
+<script type="text/javascript" src="changetest.js"></script>
+<body>
+<canvas id="gl-canvas" width="600" height="600">>
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+<br />
+<p id="tick_speed"></p>
+<br />
+<p id="score"></p>
+
+<div class="slidecontainer">
+<input type="range" min="1" max="100" value="50" class="slider" id="baseRotation">
+</div>
+<div class="slidecontainer">
+<input type="range" min="1" max="100" value="50" class="slider" id="lowerArmRotation">
+</div>
+<div class="slidecontainer">
+<input type="range" min="1" max="100" value="50" class="slider" id="upperArmRotation">
+</div>
+
+</body>
+</html>
