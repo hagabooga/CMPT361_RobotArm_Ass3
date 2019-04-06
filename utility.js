@@ -73,9 +73,9 @@ function make_rymatrix(val)
 function make_rzmatrix(val)
 {
     return [
-        Math.cos(val),-Math.sin(val),0,0,
-        Math.sin(val),Math.cos(val),0,0,
-        0,0,0,0,
+        Math.cos(val),Math.sin(val),0,0,
+        -Math.sin(val),Math.cos(val),0,0,
+        0,0,1,0,
         0,0,0,1
     ];
 }

@@ -15,10 +15,7 @@ var lightDirectionLocation;
 var innerLimitLocation;
 var outerLimitLocation;
 var viewWorldPositionLocation;
-var isSpot;
-var colorLocation2;
-
-
+var baseRotation, lowerArmRotation, upperArmRotation;
 
 
 window.onload = function init() 
@@ -42,7 +39,6 @@ window.onload = function init()
   worldViewProjectionLocation = gl.getUniformLocation(program, "u_worldViewProjection");
   worldInverseTransposeLocation = gl.getUniformLocation(program, "u_worldInverseTranspose");
   colorLocation = gl.getUniformLocation(program, "u_color");
-  colorLocation2 = gl.getUniformLocation(program, "u_color2");
   lightWorldPositionLocation = gl.getUniformLocation(program, "u_lightWorldPosition");
   worldLocation = gl.getUniformLocation(program, "u_world");
   shininessLocation = gl.getUniformLocation(program, "u_shininess");
@@ -50,7 +46,9 @@ window.onload = function init()
   innerLimitLocation = gl.getUniformLocation(program, "u_innerLimit");
   outerLimitLocation = gl.getUniformLocation(program, "u_outerLimit");
   viewWorldPositionLocation = gl.getUniformLocation(program, "u_viewWorldPosition");
-  isSpot = gl.getUniformLocation(program,"isSpot");
+  baseRotation = document.getElementById("baseRotation");
+  lowerArmRotation = document.getElementById("lowerArmRotation");
+  upperArmRotation = document.getElementById("upperArmRotation");
 
   render();
 }
@@ -59,9 +57,9 @@ var point_rotation = 0;
 var spot_movement = 0;
 var spot_increment = 0.1;
 
-var base = new Cube(2,0.2,2);
-var lower_arm = new Cube(0.2,2,0.2);
-var upper_arm = new Cube(0.2,1.3,0.2);
+var base = new Cube(1,0.2,1);
+var lower_arm = new Cube(0.2,1,0.2);
+var upper_arm = new Cube(0.15,0.7,0.15);
 function render() 
 {
   // Setup
@@ -72,7 +70,7 @@ function render()
   gl.useProgram(program);
   // SETUP CAMERA
   var projectionMatrix = make_perspectiveMatrix(degreesToRad(60), canvas.width/canvas.height, 1, 500);
-  var cameraMatrix = lookAt([0,0,10], [0,0,0], [0,1,0]);
+  var cameraMatrix = lookAt([0,3,7], [0,0,0], [0,1,0]);
   var viewMatrix = inverse(cameraMatrix);
   var viewProjectionMatrix = multiplyMat(projectionMatrix, viewMatrix);
 
@@ -90,17 +88,19 @@ function render()
   gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
   gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(normalLocation);
-
-  // position
-  // var worldMatrix = make_tmatrix(tx,ty,tz);
+  var worldMatrix = make_tmatrix(0,0,0);
+  //var worldMatrix = make_rymatrix(baseRotation.value*0.1);
+  //worldMatrix = multiplyMat(worldMatrix, make_rxmatrix(point_rotation));
+  // worldMatrix = multiplyMat(worldMatrix, make_tmatrix(tx,ty,tz));
   // worldMatrix = multiplyMat(worldMatrix, make_rxmatrix(rx));
   // worldMatrix = multiplyMat(worldMatrix, make_rymatrix(ry));
-  // worldMatrix = multiplyMat(worldMatrix, make_smatrix(2,2,2));
-  var worldMatrix = make_tmatrix(0,-4,0);
+  point_rotation += 0.01
+  //worldMatrix = multiplyMat(worldMatrix, make_tmatrix(0,0,0));
   // COLOR
-  gl.uniform4fv(colorLocation, [1, 0.3, 0, 1]); //yellow
+  gl.uniform4fv(colorLocation, [1, 0.5, 0, 1]);
   // Multiply the matrices.
   var worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, worldMatrix);
+  worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rymatrix(baseRotation.value*0.1));
   var worldInverseMatrix = inverse(worldMatrix);
   var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
   // Set the matrices
@@ -125,12 +125,15 @@ function render()
   gl.enableVertexAttribArray(normalLocation);
 
   // position
-  var worldMatrix = make_tmatrix(0,-1.8,0);
-  worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(60));
+  //var worldMatrix = make_tmatrix(0,lower_arm.h*2,0);
+  //worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(lowerArmRotation.value*0.1));
   // COLOR
-  gl.uniform4fv(colorLocation, [0, 1, 0, 1]); //yellow
+  gl.uniform4fv(colorLocation, [0, 0, 1, 1]); //yellow
   // Multiply the matrices.
-  var worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, worldMatrix);
+  //worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, worldMatrix);
+  worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,base.h,0));
+  worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(-lowerArmRotation.value*0.03));
+  worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,lower_arm.h,0));
   var worldInverseMatrix = inverse(worldMatrix);
   var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
   // Set the matrices
@@ -154,13 +157,16 @@ function render()
   gl.enableVertexAttribArray(normalLocation);
 
   // position
-  var worldMatrix = make_tmatrix(0,0,0);
-  worldMatrix = multiplyMat(worldMatrix, make_rymatrix(60));
-  worldMatrix = multiplyMat(worldMatrix, make_rxmatrix(60));
+  //worldMatrix = multiplyMat(worldMatrix, make_tmatrix(0,upper_arm.h,0));
+  //worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(upperArmRotation.value*0.1));
+
   // COLOR
   gl.uniform4fv(colorLocation, [0, 1, 0, 1]); //yellow
   // Multiply the matrices.
-  var worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, worldMatrix);
+  //var worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, worldMatrix);
+  worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,lower_arm.h,0));
+  worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(upperArmRotation.value*0.1));
+  worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,upper_arm.h,0));
   var worldInverseMatrix = inverse(worldMatrix);
   var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
   // Set the matrices
@@ -183,13 +189,13 @@ function render()
   //console.log(spotlight_matrix);
   var spotlight_pos = [spotlight_matrix[12],spotlight_matrix[13],spotlight_matrix[14]]
   gl.uniform3fv(lightWorldPositionLocation, spotlight_pos);
-  gl.uniform3fv(viewWorldPositionLocation, [0,10,0]);
-  gl.uniform1f(shininessLocation, 200);
+  gl.uniform3fv(viewWorldPositionLocation, [0,7,0]);
+  gl.uniform1f(shininessLocation, 250);
   var lightDirection = lookAt(spotlight_pos, [0,0,0],[0,1,0]);
   lightDirection = [-lightDirection[8],-lightDirection[9],-lightDirection[10]];
   gl.uniform3fv(lightDirectionLocation, lightDirection);
   gl.uniform1f(innerLimitLocation, Math.cos(0));
-  gl.uniform1f(outerLimitLocation, Math.cos(degreesToRad(80)));
+  gl.uniform1f(outerLimitLocation, Math.cos(degreesToRad(60)));
   // COLOR 
   gl.uniform4fv(colorLocation, [0,0,0,0.1]); // transparent
   // Multiply the matrices.

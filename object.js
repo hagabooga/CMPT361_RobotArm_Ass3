@@ -2,6 +2,9 @@ class Cube
 {
     constructor(w,h,l)
     {
+      this.w = w;
+      this.h = h;
+      this.l = l;
         this.vertices = make_cube(w,h,l);
         this.normals = [
 
