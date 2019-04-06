@@ -1,4 +1,5 @@
-<!DOCTYPE html><html><script id="vertex-shader" type="x-shader/x-vertex">
+<!DOCTYPE html><html>
+<script id="vertex-shader" type="x-shader/x-vertex">
 attribute vec4 a_position;
 attribute vec3 a_normal;
 uniform vec3 u_lightWorldPosition;
@@ -50,8 +51,8 @@ main()
     float inLight = smoothstep(u_outerLimit, u_innerLimit, dotFromDirection);
     float light = inLight * dot(normal, surfaceToLightDirection);
     float specular = inLight * pow(dot(normal, halfVector), u_shininess);
-    gl_FragColor.rgb *= light;
-    gl_FragColor.rgb += specular;
+    //gl_FragColor.rgb *= light;
+    //gl_FragColor.rgb += specular;
 }
 </script>
 
@@ -63,17 +64,17 @@ main()
 <script type="text/javascript" src="object.js"></script>
 <script type="text/javascript" src="main.js"></script>
 <body>
-<canvas id="gl-canvas" width="500" height="600">>
+<canvas id="gl-canvas" width="600" height="600">>
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 
 
 <div class="slidecontainer">
-    <input type="range" min="-25" max="25" value="0" class="range" id="upperArmRotation">
+    <input type="range" min="-76" max="76" value="0" class="range" id="upperArmRotation">
     </div>
     <b>Rotate Upper Arm</b>
 <div class="slidecontainer">
-<input type="range" min="-22" max="22" value="0" class="range" id="lowerArmRotation">
+<input type="range" min="-29" max="29" value="0" class="range" id="lowerArmRotation">
 </div>
 <b>Rotate Lower Arm</b>
 
@@ -83,4 +84,6 @@ Oops ... your browser doesn't support the HTML5 canvas element
     </div>
     <b>Rotate Base</b>
 </body>
+
 </html>
+
