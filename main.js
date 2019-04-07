@@ -18,16 +18,16 @@ var outerLimitLocation;
 var viewWorldPositionLocation;
 var baseRotation, lowerArmRotation, upperArmRotation;
 
-var base = new Cube(1,0.15,1);
-var lower_arm = new Cube(0.2,1,0.2);
-var upper_arm = new Cube(0.12,0.7,0.12);
-var ball = new Square();
+
 var ballx,bally;
 var allowMouse;
 var olda1,olda2;
 var a1,a2;
 var deltaRotLower, deltaRotUpper;
 var click_tick = 100;
+
+// #Animation
+var play_anim;
 
 window.onload = function init() 
 {
@@ -38,8 +38,6 @@ window.onload = function init()
   gl = WebGLUtils.setupWebGL( canvas );
   if ( !gl ) { alert( "WebGL isn't available" ); }
   program = initShaders( gl, "vertex-shader", "fragment-shader" );
-
-
   ballx =((2* (464/canvas.width)) - 1)*4;
   bally =((2 * ((canvas.height - 159)/canvas.height))-1)*4;
   var x = Math.abs(ballx);
@@ -55,6 +53,7 @@ window.onload = function init()
   olda2=a2;
 
   allowMouse = document.getElementById("allowMouse");
+  play_anim = document.getElementById("play_anim");
   // get atts and uniforms
   positionLocation = gl.getAttribLocation(program, "a_position");
   normalLocation = gl.getAttribLocation(program, "a_normal");
@@ -105,18 +104,35 @@ window.onload = function init()
        deltaRotLower = a1 - olda1;
        deltaRotUpper = a2 - olda2;
        click_tick = 0;
-       //console.log(a1,a2)
-       //console.log(key.x,key.y);
       }
     }
   })
+
+  play_anim.onclick = function()
+  {
+    allowMouse.checked = false;
+    console.log("PLAYING");
+  }
   render();
 }
 
-function lawCos(a,b,c)
+function renderCube(cube)
 {
-  return Math.acos((a*a + b*b - c*c) / (2 * a * b));
+  positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.bufferData( gl.ARRAY_BUFFER, new Float32Array(cube.vertices), gl.STATIC_DRAW );
+  normalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.normals), gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(positionLocation);
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(normalLocation);
+  gl.drawArrays(gl.TRIANGLES, 0, 36);
 }
+
 function render() 
 {
   // Setup
@@ -159,9 +175,7 @@ function render()
     gl.vertexAttribPointer( positionLocation, 3, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( positionLocation );
     gl.drawArrays( gl.TRIANGLES, 0, 6 );
-
   }
-
   // ########### base ############
   // COLOR
   gl.uniform4fv(colorLocation, [1, 0.5, 0, 1]);
@@ -176,7 +190,6 @@ function render()
     worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, make_rymatrix(baseRotation.value*0.1));
     worldMatrix = multiplyMat(worldMatrix, make_rymatrix(baseRotation.value*0.1));
   }
-  //var worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, worldMatrix);
   var worldInverseMatrix = inverse(worldMatrix);
   var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
   // Set the matrices
@@ -184,22 +197,7 @@ function render()
   gl.uniformMatrix4fv(worldInverseTransposeLocation, false, worldInverseTransposeMatrix);
   gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
   // draw
-  positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData( gl.ARRAY_BUFFER, new Float32Array(base.vertices), gl.STATIC_DRAW );
-  normalBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(base.normals), gl.STATIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(positionLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-  gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(normalLocation);
-  gl.drawArrays(gl.TRIANGLES, 0, 36);
-
-  
-
+  renderCube(base);
 
   // ########### lower arm ############
   // COLOR
@@ -224,10 +222,7 @@ function render()
     worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(-lowerArmRotation.value*0.03));
     worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(-lowerArmRotation.value*0.03));
   }
-
-
   worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,lower_arm.h,0));
-  
   var worldInverseMatrix = inverse(worldMatrix);
   var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
   // Set the matrices
@@ -235,23 +230,10 @@ function render()
   gl.uniformMatrix4fv(worldInverseTransposeLocation, false, worldInverseTransposeMatrix);
   gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
   // draw
-  positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData( gl.ARRAY_BUFFER, new Float32Array(lower_arm.vertices), gl.STATIC_DRAW );
-  normalBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lower_arm.normals), gl.STATIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(positionLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-  gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(normalLocation);
-  gl.drawArrays(gl.TRIANGLES, 0, 36);
-
+  renderCube(lower_arm);
   // ########### upper arm ############
   // COLOR
-  gl.uniform4fv(colorLocation, [0, 1, 0, 1]); //yellow
+  gl.uniform4fv(colorLocation, [0, 1, 0, 1]);
   // Multiply the matrices.
   worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,lower_arm.h,0));
   if (allowMouse.checked == true)
@@ -273,7 +255,6 @@ function render()
     worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(-upperArmRotation.value*0.1));
   }
   worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,upper_arm.h,0));
-
   var worldInverseMatrix = inverse(worldMatrix);
   var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
   // Set the matrices
@@ -281,32 +262,43 @@ function render()
   gl.uniformMatrix4fv(worldInverseTransposeLocation, false, worldInverseTransposeMatrix);
   gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
   // draw
-  positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData( gl.ARRAY_BUFFER, new Float32Array(upper_arm.vertices), gl.STATIC_DRAW );
-  normalBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(upper_arm.normals), gl.STATIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(positionLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-  gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(normalLocation);
-  gl.drawArrays(gl.TRIANGLES, 0, 36);
+  renderCube(upper_arm);
+
+
+  // ######## BACKGROUND ############
+  var background_matrix = make_tmatrix(0,-5,-6);
+  worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, background_matrix);
+  var worldInverseMatrix = inverse(background_matrix);
+  var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
+  gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix);
+  gl.uniformMatrix4fv(worldInverseTransposeLocation, false, worldInverseTransposeMatrix);
+  gl.uniformMatrix4fv(worldLocation, false, background_matrix);
+  gl.uniform4fv(colorLocation, [0.0, 0.8, 1, 0.7]);
+  renderCube(background);
+
+  // ########## TABLE ##########
+  // ######## BACKGROUND ############
+  var table_matrix = make_tmatrix(0,-base.h-table.h,0);
+  worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, table_matrix);
+  var worldInverseMatrix = inverse(table_matrix);
+  var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
+  gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix);
+  gl.uniformMatrix4fv(worldInverseTransposeLocation, false, worldInverseTransposeMatrix);
+  gl.uniformMatrix4fv(worldLocation, false, table_matrix);
+  gl.uniform4fv(colorLocation, [0.4, 0.2, 0.2, 1]);
+  renderCube(table);
 
   // ########### SPOTLIGHT ##########
-  var spotlight_matrix = make_tmatrix(0,3,4);
+  var spotlight_matrix = make_tmatrix(0,3,5);
   var spotlight_pos = [spotlight_matrix[12],spotlight_matrix[13],spotlight_matrix[14]]
   gl.uniform3fv(lightWorldPositionLocation, spotlight_pos);
-  gl.uniform3fv(viewWorldPositionLocation, [0,7,0]);
-  gl.uniform1f(shininessLocation, 900);
+  gl.uniform3fv(viewWorldPositionLocation, [0,0,0]);
+  gl.uniform1f(shininessLocation, 200);
   var lightDirection = lookAt(spotlight_pos, [0,0,0],[0,1,0]);
   lightDirection = [-lightDirection[8],-lightDirection[9],-lightDirection[10]];
   gl.uniform3fv(lightDirectionLocation, lightDirection);
   gl.uniform1f(innerLimitLocation, Math.cos(0));
-  gl.uniform1f(outerLimitLocation, Math.cos(degreesToRad(50)));
-  // COLOR 
+  gl.uniform1f(outerLimitLocation, Math.cos(degreesToRad(40)));
   // Multiply the matrices.
   worldMatrix = spotlight_matrix;
   var worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, worldMatrix);
@@ -316,8 +308,11 @@ function render()
   gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix);
   gl.uniformMatrix4fv(worldInverseTransposeLocation, false, worldInverseTransposeMatrix);
   gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
+
+  
+
+
+
+
   window.requestAnimationFrame(render);
-
-
-
 }

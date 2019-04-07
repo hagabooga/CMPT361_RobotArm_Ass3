@@ -52,7 +52,7 @@ main()
     float light = inLight * dot(normal, surfaceToLightDirection);
     float specular = inLight * pow(dot(normal, halfVector), u_shininess);
     gl_FragColor.rgb *= light;
-    gl_FragColor.rgb += specular;
+    //gl_FragColor.rgb += specular;
 }
 </script>
 
@@ -68,7 +68,6 @@ main()
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 
-<input type="checkbox" id ="allowMouse"> Allow Mouse Click<br>
 <div class="slidecontainer">
     <input type="range" min="-76" max="76" value="0" class="range" id="upperArmRotation">
     </div>
@@ -77,12 +76,13 @@ Oops ... your browser doesn't support the HTML5 canvas element
 <input type="range" min="-29" max="29" value="0" class="range" id="lowerArmRotation">
 </div>
 <b>Rotate Lower Arm</b>
-
-
 <div class="slidecontainer">
     <input type="range" min="-35" max="35" value="0" class="range"  id="baseRotation">
     </div>
-    <b>Rotate Base</b>
+<b>Rotate Base</b>
+<p></p>
+ <input type="checkbox" id ="allowMouse"> Allow Mouse Click<br>
+<button class="button" id = "play_anim">Play Animation</button>
 </body>
 
 </html>

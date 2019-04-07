@@ -76,3 +76,10 @@ class Square
     ];
   }
 }
+
+var base = new Cube(1,0.15,1);
+var lower_arm = new Cube(0.2,1,0.2);
+var upper_arm = new Cube(0.12,0.7,0.12);
+var ball = new Square();
+var background = new Cube(12,12,1);
+var table = new Cube(8,3,6)

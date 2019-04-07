@@ -121,6 +121,11 @@ function make_perspectiveMatrix (fov, aspect, near, far)
     ];
 }
 
+function lawCos(a,b,c)
+{
+  return Math.acos((a*a + b*b - c*c) / (2 * a * b));
+}
+
 function degreesToRad(x)
 {
     return x*Math.PI/180;
