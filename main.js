@@ -24,6 +24,10 @@ var upper_arm = new Cube(0.12,0.7,0.12);
 var ball = new Square();
 var ballx,bally;
 var allowMouse;
+var olda1,olda2;
+var a1,a2;
+var deltaRotLower, deltaRotUpper;
+var click_tick = 100;
 
 window.onload = function init() 
 {
@@ -34,8 +38,22 @@ window.onload = function init()
   gl = WebGLUtils.setupWebGL( canvas );
   if ( !gl ) { alert( "WebGL isn't available" ); }
   program = initShaders( gl, "vertex-shader", "fragment-shader" );
+
+
   ballx =((2* (464/canvas.width)) - 1)*4;
   bally =((2 * ((canvas.height - 159)/canvas.height))-1)*4;
+  var x = Math.abs(ballx);
+  var y = Math.abs(bally);
+  var dist = Math.sqrt(x*x + y*y)/2;
+  //var len1 = 
+  var d1 = Math.atan2(y,x);
+  var d2 = lawCos(dist,lower_arm.h, upper_arm.h);
+  a1 = d1+d2;
+  a2 = lawCos(lower_arm.h, upper_arm.h, dist);
+
+  olda1=a1;
+  olda2=a2;
+
   allowMouse = document.getElementById("allowMouse");
   // get atts and uniforms
   positionLocation = gl.getAttribLocation(program, "a_position");
@@ -61,9 +79,34 @@ window.onload = function init()
       if (0 <= key.x && key.x <= canvas.width && //!(185 <= key.x && key.x <= 385 && !(0<=key.y && key.y <= 150)) &&
       0 <= key.y && key.y <= canvas.height/2)
       {
+        olda1 = a1;
+        olda2 = a2;
        ballx = ((2* (key.x/canvas.width)) - 1)*4;
        bally = ((2 * ((canvas.height - key.y)/canvas.height))-1)*4;
-       console.log(key.x,key.y);
+       // find angles
+       var x = Math.abs(ballx);
+       var y = Math.abs(bally);
+       var dist = Math.sqrt(x*x + y*y)/2;
+       //var len1 = 
+       var d1 = Math.atan2(y,x);
+       var d2 = lawCos(dist,lower_arm.h, upper_arm.h);
+       a1 = d1+d2;
+       a2 = lawCos(lower_arm.h, upper_arm.h, dist);
+       if (ballx <= 0) 
+       {
+         a1 = Math.PI - a1;
+         a2 = -a2;
+       }
+       if (isNaN(a1))
+       {
+         a1 = Math.PI/2;
+         a2 = Math.PI;
+       }
+       deltaRotLower = a1 - olda1;
+       deltaRotUpper = a2 - olda2;
+       click_tick = 0;
+       //console.log(a1,a2)
+       //console.log(key.x,key.y);
       }
     }
   })
@@ -119,27 +162,6 @@ function render()
 
   }
 
-  var x = Math.abs(ballx);
-  var y = Math.abs(bally);
-  var dist = Math.sqrt(x*x + y*y)/2;
-  //var len1 = 
-  var d1 = Math.atan2(y,x);
-  var d2 = lawCos(dist,lower_arm.h, upper_arm.h);
-  var a1 = d1+d2;
-  var a2 = lawCos(lower_arm.h, upper_arm.h, dist);
-  if (ballx <= 0) 
-  {
-    a1 = Math.PI - a1;
-    a2 = -a2;
-  }
-  if (isNaN(a1))
-  {
-    a1 = Math.PI/2;
-    a2 = Math.PI;
-  }
-  console.log(a1,a2)
-  
-
   // ########### base ############
   // COLOR
   gl.uniform4fv(colorLocation, [1, 0.5, 0, 1]);
@@ -186,10 +208,16 @@ function render()
   worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,base.h,0));
   if (allowMouse.checked == true)
   {
+    var angle = a1;
+    if (click_tick <= 100)
+    {
+      click_tick += 1;
+      angle = olda1 + deltaRotLower*0.01*click_tick;
+    }
     worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(-Math.PI/2));
-    worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(a1));
+    worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(angle));
     worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(-Math.PI/2));
-    worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(a1));
+    worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(angle));
   }
   else
   {
@@ -228,8 +256,14 @@ function render()
   worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,lower_arm.h,0));
   if (allowMouse.checked == true)
   {
+    var angle = a2;
+    if (click_tick <= 100)
+    {
+      click_tick += 1;
+      angle = olda2 + deltaRotUpper*0.01*click_tick;
+    }
     worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(-Math.PI));
-    worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(a2));
+    worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(angle));
     worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(-Math.PI));
     worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(a2));
   }
