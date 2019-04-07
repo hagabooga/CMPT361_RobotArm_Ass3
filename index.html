@@ -51,8 +51,8 @@ main()
     float inLight = smoothstep(u_outerLimit, u_innerLimit, dotFromDirection);
     float light = inLight * dot(normal, surfaceToLightDirection);
     float specular = inLight * pow(dot(normal, halfVector), u_shininess);
-    //gl_FragColor.rgb *= light;
-    //gl_FragColor.rgb += specular;
+    gl_FragColor.rgb *= light;
+    gl_FragColor.rgb += specular;
 }
 </script>
 
@@ -68,7 +68,7 @@ main()
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 
-
+<input type="checkbox" id ="allowMouse"> Allow Mouse Click<br>
 <div class="slidecontainer">
     <input type="range" min="-76" max="76" value="0" class="range" id="upperArmRotation">
     </div>

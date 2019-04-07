@@ -22,10 +22,10 @@ var base = new Cube(1,0.15,1);
 var lower_arm = new Cube(0.2,1,0.2);
 var upper_arm = new Cube(0.12,0.7,0.12);
 var ball = new Square();
-var ballx, bally = 0;
+var ballx,bally;
+var allowMouse;
 
-
-function init() 
+window.onload = function init() 
 {
   
   // Get A WebGL context
@@ -34,8 +34,9 @@ function init()
   gl = WebGLUtils.setupWebGL( canvas );
   if ( !gl ) { alert( "WebGL isn't available" ); }
   program = initShaders( gl, "vertex-shader", "fragment-shader" );
-  
-
+  ballx =((2* (464/canvas.width)) - 1)*4;
+  bally =((2 * ((canvas.height - 159)/canvas.height))-1)*4;
+  allowMouse = document.getElementById("allowMouse");
   // get atts and uniforms
   positionLocation = gl.getAttribLocation(program, "a_position");
   normalLocation = gl.getAttribLocation(program, "a_normal");
@@ -55,19 +56,24 @@ function init()
 
   window.addEventListener("mousedown", function(key)
   {
-    if (0 <= key.x && key.x <= canvas.width && !(200 <= key.x && key.x <= 400 && !(0<=key.y && key.y <= 175)) &&
-       0 <= key.y && key.y <= canvas.height/2)
-       {
-        ballx = ((2* (key.x/canvas.width)) - 1)*4;
-        bally = ((2 * ((canvas.height - key.y)/canvas.height))-1)*4;
-        console.log(key.x,key.y);
-       }
-
+    if (allowMouse.checked)
+    {
+      if (0 <= key.x && key.x <= canvas.width && //!(185 <= key.x && key.x <= 385 && !(0<=key.y && key.y <= 150)) &&
+      0 <= key.y && key.y <= canvas.height/2)
+      {
+       ballx = ((2* (key.x/canvas.width)) - 1)*4;
+       bally = ((2 * ((canvas.height - key.y)/canvas.height))-1)*4;
+       console.log(key.x,key.y);
+      }
+    }
   })
   render();
 }
 
-
+function lawCos(a,b,c)
+{
+  return Math.acos((a*a + b*b - c*c) / (2 * a * b));
+}
 function render() 
 {
   // Setup
@@ -79,19 +85,76 @@ function render()
   gl.useProgram(program);
   // SETUP CAMERA
   var projectionMatrix = make_perspectiveMatrix(degreesToRad(60), canvas.width/canvas.height, 1, 500);
-  //var cameraMatrix = lookAt([0,4,6], [0,1.5,0], [0,1,0]);
-  var cameraMatrix = lookAt([0,0,7], [0,0,0], [0,1,0]);
+  var cameraMatrix;
+  if (!allowMouse.checked)
+  {
+    cameraMatrix = lookAt([0,4,6], [0,1.5,0], [0,1,0]);
+  }
+  else
+  {
+    cameraMatrix = lookAt([0,0,7], [0,0,0], [0,1,0]);
+  }
   var viewMatrix = inverse(cameraMatrix);
   var viewProjectionMatrix = multiplyMat(projectionMatrix, viewMatrix);
+  // ####### ball ########
+  if (allowMouse.checked == true)
+  {
+    var vBuffer = gl.createBuffer();
+    worldMatrix = make_tmatrix(ballx,bally,0);
+    worldMatrix = multiplyMat(worldMatrix, make_smatrix(0.25,0.25,0.25));
+    var worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, worldMatrix);
+    var worldInverseMatrix = inverse(worldMatrix);
+    var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
+    var leggo = [ballx,bally,0,1];
+    worldInverseMatrix = multiplyMat(worldInverseMatrix, leggo)
+    gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix);
+    gl.uniformMatrix4fv(worldInverseTransposeLocation, false, worldInverseTransposeMatrix);
+    gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
+    gl.uniform4fv(colorLocation, [1,0,0,1]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(ball.vertices), gl.STATIC_DRAW );
+    gl.vertexAttribPointer( positionLocation, 3, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( positionLocation );
+    gl.drawArrays( gl.TRIANGLES, 0, 6 );
+
+  }
+
+  var x = Math.abs(ballx);
+  var y = Math.abs(bally);
+  var dist = Math.sqrt(x*x + y*y)/2;
+  //var len1 = 
+  var d1 = Math.atan2(y,x);
+  var d2 = lawCos(dist,lower_arm.h, upper_arm.h);
+  var a1 = d1+d2;
+  var a2 = lawCos(lower_arm.h, upper_arm.h, dist);
+  if (ballx <= 0) 
+  {
+    a1 = Math.PI - a1;
+    a2 = -a2;
+  }
+  if (isNaN(a1))
+  {
+    a1 = Math.PI/2;
+    a2 = Math.PI;
+  }
+  console.log(a1,a2)
+  
 
   // ########### base ############
   // COLOR
   gl.uniform4fv(colorLocation, [1, 0.5, 0, 1]);
   // Multiply the matrices.
-  var worldMatrix = make_tmatrix(0,0,0);
-  worldMatrix = multiplyMat(worldMatrix, make_rymatrix(baseRotation.value*0.1));
+  var worldMatrix = make_smatrix(1,1,1);
+  if (allowMouse.checked)
+  {
+    worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, worldMatrix);
+  }
+  else
+  {
+    worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, make_rymatrix(baseRotation.value*0.1));
+    worldMatrix = multiplyMat(worldMatrix, make_rymatrix(baseRotation.value*0.1));
+  }
   //var worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, worldMatrix);
-  worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, make_rymatrix(baseRotation.value*0.1));
   var worldInverseMatrix = inverse(worldMatrix);
   var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
   // Set the matrices
@@ -113,15 +176,30 @@ function render()
   gl.enableVertexAttribArray(normalLocation);
   gl.drawArrays(gl.TRIANGLES, 0, 36);
 
+  
+
 
   // ########### lower arm ############
   // COLOR
   gl.uniform4fv(colorLocation, [0, 0, 1, 1]); 
   // Multiply the matrices.
   worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,base.h,0));
-  worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(-lowerArmRotation.value*0.03));
+  if (allowMouse.checked == true)
+  {
+    worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(-Math.PI/2));
+    worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(a1));
+    worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(-Math.PI/2));
+    worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(a1));
+  }
+  else
+  {
+    worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(-lowerArmRotation.value*0.03));
+    worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(-lowerArmRotation.value*0.03));
+  }
+
+
   worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,lower_arm.h,0));
-  worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(-lowerArmRotation.value*0.03));
+  
   var worldInverseMatrix = inverse(worldMatrix);
   var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
   // Set the matrices
@@ -148,9 +226,19 @@ function render()
   gl.uniform4fv(colorLocation, [0, 1, 0, 1]); //yellow
   // Multiply the matrices.
   worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,lower_arm.h,0));
-  worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(-upperArmRotation.value*0.03));
+  if (allowMouse.checked == true)
+  {
+    worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(-Math.PI));
+    worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(a2));
+    worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(-Math.PI));
+    worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(a2));
+  }
+  else
+  {
+    worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_rzmatrix(-upperArmRotation.value*0.03));
+    worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(-upperArmRotation.value*0.1));
+  }
   worldViewProjectionMatrix = multiplyMat(worldViewProjectionMatrix, make_tmatrix(0,upper_arm.h,0));
-  worldMatrix = multiplyMat(worldMatrix, make_rzmatrix(-upperArmRotation.value*0.1));
 
   var worldInverseMatrix = inverse(worldMatrix);
   var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
@@ -174,12 +262,12 @@ function render()
   gl.drawArrays(gl.TRIANGLES, 0, 36);
 
   // ########### SPOTLIGHT ##########
-  var spotlight_matrix = make_tmatrix(0,7,7);
+  var spotlight_matrix = make_tmatrix(0,3,4);
   var spotlight_pos = [spotlight_matrix[12],spotlight_matrix[13],spotlight_matrix[14]]
   gl.uniform3fv(lightWorldPositionLocation, spotlight_pos);
   gl.uniform3fv(viewWorldPositionLocation, [0,7,0]);
   gl.uniform1f(shininessLocation, 900);
-  var lightDirection = lookAt(spotlight_pos, [0,1,0],[0,1,0]);
+  var lightDirection = lookAt(spotlight_pos, [0,0,0],[0,1,0]);
   lightDirection = [-lightDirection[8],-lightDirection[9],-lightDirection[10]];
   gl.uniform3fv(lightDirectionLocation, lightDirection);
   gl.uniform1f(innerLimitLocation, Math.cos(0));
@@ -197,24 +285,5 @@ function render()
   window.requestAnimationFrame(render);
 
 
-  var vBuffer = gl.createBuffer();
-  worldMatrix = make_tmatrix(ballx,bally,0);
-  worldMatrix = multiplyMat(worldMatrix, make_smatrix(0.25,0.25,0.25));
-  var worldViewProjectionMatrix = multiplyMat(viewProjectionMatrix, worldMatrix);
-  var worldInverseMatrix = inverse(worldMatrix);
-  var worldInverseTransposeMatrix = transpose(worldInverseMatrix);
-  var leggo = [ballx,bally,0,1];
-  worldInverseMatrix = multiplyMat(worldInverseMatrix, leggo)
-  gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix);
-  gl.uniformMatrix4fv(worldInverseTransposeLocation, false, worldInverseTransposeMatrix);
-  gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
-  gl.uniform4fv(colorLocation, [1,0,0,1]);
-  gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-  gl.bufferData( gl.ARRAY_BUFFER, flatten(ball.vertices), gl.STATIC_DRAW );
-  gl.vertexAttribPointer( positionLocation, 3, gl.FLOAT, false, 0, 0 );
-  gl.enableVertexAttribArray( positionLocation );
-  gl.drawArrays( gl.TRIANGLES, 0, 6 );
 
 }
-
-window.onload = init;
